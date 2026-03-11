@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Romeo & Juliet — Verona Quiz Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  background:
+    radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.18) 0%,transparent 60%),
+    linear-gradient(180deg,#5bbde0 0%,#8dd4f0 28%,#5faa38 28%,#3d7a28 100%);
+  background-attachment:fixed;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  font-family:'Nunito',sans-serif;padding-bottom:20px;overflow-x:auto;
+}
+
+/* CLOUDS */
+.clouds{position:fixed;top:0;left:0;width:100%;height:140px;pointer-events:none;z-index:1;overflow:hidden}
+.cloud{position:absolute;font-size:2.2rem;animation:cloudMove linear infinite;opacity:.85;top:20px}
+@keyframes cloudMove{from{transform:translateX(-120px)}to{transform:translateX(110vw)}}
+
+/* HUD */
+.hud{position:relative;z-index:10;width:100%;max-width:1100px;padding:10px 24px 4px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px}
+.hud-title{font-family:'Fredoka One',cursive;font-size:1.3rem;color:#fff;
+  text-shadow:0 2px 6px rgba(0,0,0,.45);white-space:nowrap}
+.player-card{background:linear-gradient(135deg,#2d1060,#1a0a40);border:3px solid #7c3aed;
+  border-radius:16px;padding:8px 16px;display:flex;align-items:center;gap:12px;
+  box-shadow:0 4px 18px rgba(0,0,0,.45)}
+.player-avatar{width:46px;height:46px;border-radius:50%;
+  background:radial-gradient(circle at 38% 32%,#a78bfa,#7c3aed 55%,#4f1f9e);
+  border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.4);
+  display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.player-name{font-family:'Fredoka One',cursive;font-size:.95rem;color:#fff}
+.player-sub{font-size:.6rem;color:#c4a8ff;margin-top:1px}
+.turn-badge{background:linear-gradient(135deg,#7c3aed,#4f1f9e);border:3px solid #a855f7;
+  border-radius:14px;padding:7px 14px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.turn-label{font-size:.5rem;letter-spacing:.25em;color:#c4a8ff;text-transform:uppercase;font-weight:900}
+.turn-num{font-family:'Fredoka One',cursive;font-size:1.4rem;color:#fff;line-height:1}
+.turn-of{font-size:.55rem;color:#c4a8ff}
+
+/* EFFECTS BAR */
+.effects-bar{width:100%;max-width:1100px;padding:2px 24px 4px;
+  display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-height:26px;z-index:10;position:relative}
+.epill{border-radius:20px;padding:2px 10px;font-size:.6rem;font-weight:800;color:#fff;
+  display:flex;align-items:center;gap:4px;border:1.5px solid}
+.epill.good{background:rgba(21,128,61,.5);border-color:#4ade80;color:#86efac}
+.epill.bad{background:rgba(153,27,27,.5);border-color:#f87171;color:#fca5a5}
+
+/* GAME AREA */
+.game-area{display:flex;align-items:flex-start;justify-content:center;gap:16px;
+  width:100%;max-width:1100px;padding:0 12px;position:relative;z-index:5}
+
+/* DECK COLUMNS */
+.deck-col{display:flex;flex-direction:column;gap:16px;width:150px;flex-shrink:0;padding-top:12px}
+.deck-block{display:flex;flex-direction:column;align-items:center}
+.deck-title{font-family:'Fredoka One',cursive;font-size:.72rem;letter-spacing:.06em;
+  text-align:center;margin-bottom:8px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.deck-title.qt{color:#a5b4fc}
+.deck-title.gt{color:#4ade80}
+.deck-title.bt{color:#f87171}
+
+/* 3D CARD PILE */
+.card-pile-3d{
+  position:relative;width:88px;height:120px;margin:0 auto;
+  transform-style:preserve-3d;perspective:400px;
+  cursor:default;
+}
+/* Each layer in the pile */
+.pile-card{
+  position:absolute;width:80px;height:110px;border-radius:10px;
+  border:2px solid rgba(255,255,255,.22);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;
+  transform-style:preserve-3d;
+  transition:transform .3s ease;
+  left:4px;
+}
+/* Stack them with depth offset */
+.pile-card:nth-child(1){transform:translateZ(-6px) translateY(4px) rotate(-3deg)}
+.pile-card:nth-child(2){transform:translateZ(-3px) translateY(2px) rotate(-1.5deg)}
+.pile-card:nth-child(3){transform:translateZ(0px)  translateY(0px)  rotate(0deg)}
+
+/* Card back designs */
+.qback{background:linear-gradient(135deg,#1e1b4b,#312e81);border-color:#6366f1;
+  box-shadow:0 4px 14px rgba(99,102,241,.3),inset 0 1px 0 rgba(255,255,255,.1)}
+.gback{background:linear-gradient(135deg,#052e16,#14532d);border-color:#22c55e;
+  box-shadow:0 4px 14px rgba(34,197,94,.3),inset 0 1px 0 rgba(255,255,255,.1)}
+.bback{background:linear-gradient(135deg,#450a0a,#7f1d1d);border-color:#ef4444;
+  box-shadow:0 4px 14px rgba(239,68,68,.3),inset 0 1px 0 rgba(255,255,255,.1)}
+
+/* Card back pattern */
+.pile-card::after{
+  content:'';position:absolute;inset:6px;border-radius:6px;
+  border:1px solid rgba(255,255,255,.12);
+  background:repeating-linear-gradient(45deg,
+    rgba(255,255,255,.03) 0px,rgba(255,255,255,.03) 2px,
+    transparent 2px,transparent 6px);
+}
+
+.deck-count{font-family:'Fredoka One',cursive;font-size:.6rem;color:rgba(255,255,255,.55);margin-top:6px}
+
+/* How to play */
+.how-box{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;padding:10px 12px;text-align:center}
+.how-box-title{font-family:'Fredoka One',cursive;font-size:.6rem;color:#a5b4fc;
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.how-box-body{font-size:.58rem;color:rgba(255,255,255,.65);line-height:1.9}
+
+/* BOARD */
+.board-wrap{position:relative;flex-shrink:0}
+#boardCanvas{display:block}
+
+/* PAWN */
+#pawn{position:absolute;z-index:20;pointer-events:none;width:44px;
+  transition:left .5s cubic-bezier(.34,1.5,.64,1),top .5s cubic-bezier(.34,1.5,.64,1)}
+.pawn-emoji{width:44px;height:44px;border-radius:50%;
+  background:radial-gradient(circle at 38% 32%,#c4b5fd,#7c3aed 55%,#4f1f9e);
+  border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.6);
+  display:flex;align-items:center;justify-content:center;font-size:1.25rem;
+  animation:pawnBob 1.6s ease-in-out infinite}
+.pawn-shadow{width:30px;height:8px;margin:-2px auto 0;background:rgba(0,0,0,.28);
+  border-radius:50%;animation:shadowPulse 1.6s ease-in-out infinite}
+@keyframes pawnBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes shadowPulse{0%,100%{transform:scaleX(1);opacity:.28}50%{transform:scaleX(.65);opacity:.12}}
+#pawn.moving .pawn-emoji{animation:pawnJump .5s ease-out}
+@keyframes pawnJump{
+  0%{transform:scale(1) translateY(0)}28%{transform:scale(1.2,.82) translateY(0)}
+  55%{transform:scale(.88,1.2) translateY(-15px)}80%{transform:scale(1.04,.96) translateY(-1px)}
+  100%{transform:scale(1) translateY(0)}}
+
+/* BOTTOM UI */
+.bottom-ui{position:relative;z-index:10;display:flex;align-items:center;justify-content:center;gap:20px}
+.dice-section{display:flex;flex-direction:column;align-items:center;gap:5px}
+.dice-label{font-family:'Fredoka One',cursive;font-size:.65rem;letter-spacing:.15em;
+  color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5);text-transform:uppercase}
+.dice-wrap{width:68px;height:68px;perspective:500px}
+.cube{width:68px;height:68px;position:relative;transform-style:preserve-3d;
+  transition:transform 1.6s cubic-bezier(.25,.1,.1,1.0)}
+.face{position:absolute;width:68px;height:68px;background:#fff;border:2.5px solid #ddd;
+  border-radius:11px;display:grid;place-items:center}
+.pip-grid{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr 1fr;
+  width:50px;height:50px;padding:3px}
+.pip{width:11px;height:11px;background:#1a1a2e;border-radius:50%;place-self:center;visibility:hidden}
+.f1 .pip:nth-child(5){visibility:visible}
+.f2 .pip:nth-child(3){visibility:visible}.f2 .pip:nth-child(7){visibility:visible}
+.f3 .pip:nth-child(3){visibility:visible}.f3 .pip:nth-child(5){visibility:visible}.f3 .pip:nth-child(7){visibility:visible}
+.f4 .pip:nth-child(1){visibility:visible}.f4 .pip:nth-child(3){visibility:visible}.f4 .pip:nth-child(7){visibility:visible}.f4 .pip:nth-child(9){visibility:visible}
+.f5 .pip:nth-child(1){visibility:visible}.f5 .pip:nth-child(3){visibility:visible}.f5 .pip:nth-child(5){visibility:visible}.f5 .pip:nth-child(7){visibility:visible}.f5 .pip:nth-child(9){visibility:visible}
+.f6 .pip:nth-child(1){visibility:visible}.f6 .pip:nth-child(3){visibility:visible}.f6 .pip:nth-child(4){visibility:visible}.f6 .pip:nth-child(6){visibility:visible}.f6 .pip:nth-child(7){visibility:visible}.f6 .pip:nth-child(9){visibility:visible}
+.front{transform:rotateY(0deg)   translateZ(34px)}
+.back {transform:rotateY(180deg) translateZ(34px)}
+.right{transform:rotateY(90deg)  translateZ(34px)}
+.left {transform:rotateY(-90deg) translateZ(34px)}
+.top  {transform:rotateX(90deg)  translateZ(34px)}
+.bottom{transform:rotateX(-90deg) translateZ(34px)}
+
+.status-card{background:linear-gradient(135deg,#1e0850,#2d1060);border:3px solid #7c3aed;
+  border-radius:20px;padding:12px 22px;min-width:230px;text-align:center;
+  box-shadow:0 6px 24px rgba(0,0,0,.5)}
+#statusText{font-family:'Fredoka One',cursive;font-size:.95rem;color:#fff;min-height:1.4em}
+.steps-row{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:5px}
+#stepsText{font-family:'Fredoka One',cursive;font-size:.7rem;color:#ffd700}
+
+#rollBtn{font-family:'Fredoka One',cursive;font-size:1.05rem;color:#fff;
+  background:linear-gradient(180deg,#7c3aed,#4f1f9e);
+  border:3px solid #9d6aff;border-bottom:5px solid #2d0f70;
+  border-radius:16px;padding:13px 28px;cursor:pointer;
+  box-shadow:0 6px 18px rgba(0,0,0,.4);transition:all .12s}
+#rollBtn:hover:not(:disabled){background:linear-gradient(180deg,#9050ff,#6030b0);transform:translateY(-2px)}
+#rollBtn:active:not(:disabled){transform:translateY(3px);border-bottom-width:2px}
+#rollBtn:disabled{background:linear-gradient(180deg,#555,#333);border-color:#777;
+  border-bottom-color:#222;cursor:not-allowed;opacity:.7}
+
+/* ═══════════════════════════════════════════
+   CARD DRAW ANIMATION — MASTER DUEL STYLE
+   ═══════════════════════════════════════════ */
+
+/* Full screen backdrop */
+#cardDrawScene{
+  position:fixed;inset:0;z-index:700;
+  pointer-events:none;
+  display:none;
+}
+#cardDrawScene.active{display:block;pointer-events:all}
+
+/* Dim background */
+.draw-backdrop{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,0);
+  transition:background .35s ease;
+}
+#cardDrawScene.active .draw-backdrop{background:rgba(0,0,0,.75)}
+
+/* The animated card */
+.draw-card{
+  position:absolute;
+  width:160px;height:220px;
+  transform-style:preserve-3d;
+  perspective:800px;
+  /* Start: positioned over the source deck — set by JS */
+  transform-origin:center center;
+  will-change:transform,left,top,width,height;
+}
+.draw-card-inner{
+  width:100%;height:100%;
+  position:relative;transform-style:preserve-3d;
+  transition:transform 0.65s cubic-bezier(0.4,0.0,0.2,1);
+}
+.draw-card-front,.draw-card-back{
+  position:absolute;inset:0;border-radius:14px;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border:3px solid;
+  box-shadow:0 8px 24px rgba(0,0,0,.7);
+}
+.draw-card-back{
+  transform:rotateY(0deg);
+  font-size:3rem;
+}
+.draw-card-front{
+  transform:rotateY(180deg);
+  padding:18px 16px;text-align:center;
+  gap:8px;
+}
+/* Flip state */
+.draw-card-inner.flipped{transform:rotateY(180deg)}
+
+/* Good card colours */
+.draw-card.good .draw-card-back{background:linear-gradient(155deg,#052e16,#14532d);border-color:#22c55e}
+.draw-card.good .draw-card-front{background:linear-gradient(155deg,#052e16,#14532d);border-color:#22c55e;
+  box-shadow:0 8px 30px rgba(0,0,0,.8),0 0 20px rgba(34,197,94,.4)}
+/* Bad card colours */
+.draw-card.bad .draw-card-back{background:linear-gradient(155deg,#450a0a,#7f1d1d);border-color:#ef4444}
+.draw-card.bad .draw-card-front{background:linear-gradient(155deg,#450a0a,#7f1d1d);border-color:#ef4444;
+  box-shadow:0 8px 30px rgba(0,0,0,.8),0 0 20px rgba(239,68,68,.4)}
+
+/* Card back pattern overlay */
+.draw-card-back::after{
+  content:'';position:absolute;inset:8px;border-radius:8px;
+  border:1.5px solid rgba(255,255,255,.15);
+  background:repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0,rgba(255,255,255,.04) 2px,transparent 2px,transparent 8px);
+}
+.draw-card-back-icon{font-size:3.5rem;position:relative;z-index:1}
+
+/* Card front content */
+.dfc-type{font-family:'Fredoka One',cursive;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;margin-bottom:0}
+.draw-card.good .dfc-type{color:#4ade80}
+.draw-card.bad  .dfc-type{color:#f87171}
+.dfc-icon{font-size:2.8rem;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
+.dfc-title{font-family:'Fredoka One',cursive;font-size:1.1rem;color:#fff;line-height:1.2}
+.dfc-desc{font-size:.72rem;color:rgba(255,255,255,.85);line-height:1.55}
+.dfc-divider{width:80%;height:1px;background:rgba(255,255,255,.2);margin:2px 0}
+
+/* Shine sweep animation on flip — contained inside card */
+@keyframes cardShine{
+  0%{transform:translateX(-200%) skewX(-20deg)}
+  100%{transform:translateX(300%) skewX(-20deg)}
+}
+.shine-overlay{
+  position:absolute;inset:0;border-radius:11px;
+  overflow:hidden;pointer-events:none;z-index:10;
+}
+.shine-overlay::after{
+  content:'';position:absolute;top:0;left:0;width:55%;height:100%;
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.28) 50%,transparent 100%);
+  transform:translateX(-200%) skewX(-20deg);
+}
+.draw-card-inner.shining .shine-overlay::after{
+  animation:cardShine .65s ease-out .45s forwards;
+}
+
+/* OK button that appears after flip */
+.dfc-ok{
+  font-family:'Fredoka One',cursive;font-size:.85rem;color:#fff;
+  border-radius:10px;padding:8px 24px;cursor:pointer;
+  border:2.5px solid;border-bottom:4px solid;
+  transition:all .12s;opacity:0;transform:translateY(8px);
+  transition:opacity .3s ease .9s, transform .3s ease .9s;
+  pointer-events:none;
+}
+.draw-card.good .dfc-ok{background:linear-gradient(180deg,#16a34a,#15803d);border-color:#4ade80;border-bottom-color:#14532d}
+.draw-card.bad  .dfc-ok{background:linear-gradient(180deg,#dc2626,#b91c1c);border-color:#f87171;border-bottom-color:#7f1d1d}
+.draw-card-inner.flipped .dfc-ok{opacity:1;transform:translateY(0);pointer-events:all}
+.dfc-ok:hover{transform:translateY(-2px)!important}
+.dfc-ok:active{transform:translateY(2px)!important}
+
+/* Particle burst on flip */
+.card-particle{
+  position:fixed;width:8px;height:8px;border-radius:50%;
+  pointer-events:none;z-index:800;
+  animation:particleBurst .7s ease-out forwards;
+}
+@keyframes particleBurst{
+  0%{transform:translate(0,0) scale(1);opacity:1}
+  100%{transform:translate(var(--px),var(--py)) scale(0);opacity:0}
+}
+
+/* QUESTION POPUP */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;
+  align-items:center;justify-content:center;z-index:600;backdrop-filter:blur(5px)}
+.overlay.show{display:flex}
+@keyframes cardPop{from{transform:scale(.5) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.q-card{background:linear-gradient(135deg,#1e1b4b,#312e81);border:4px solid #6366f1;
+  border-radius:24px;padding:28px 34px;text-align:center;
+  box-shadow:0 10px 40px rgba(0,0,0,.85),0 0 60px rgba(99,102,241,.3);
+  animation:cardPop .4s cubic-bezier(.34,1.5,.64,1) forwards;max-width:440px;width:92%}
+.q-header{font-family:'Fredoka One',cursive;font-size:.7rem;letter-spacing:.2em;color:#a5b4fc;
+  text-transform:uppercase;margin-bottom:3px}
+.q-text{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;color:#fff;
+  margin-bottom:18px;line-height:1.55}
+.q-options{display:flex;flex-direction:column;gap:9px;margin-bottom:12px}
+.q-btn{font-family:'Nunito',sans-serif;font-weight:800;font-size:.88rem;color:#fff;
+  padding:10px 14px;border-radius:11px;cursor:pointer;
+  border:2px solid rgba(255,255,255,.18);text-align:left;
+  background:rgba(255,255,255,.08);transition:all .14s}
+.q-btn:hover:not(:disabled){background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.5);transform:translateX(4px)}
+.q-btn:disabled{cursor:default}
+.q-btn.correct{background:rgba(34,197,94,.3)!important;border-color:#22c55e!important;color:#4ade80!important}
+.q-btn.wrong  {background:rgba(239,68,68,.3)!important;border-color:#ef4444!important;color:#f87171!important}
+.q-skip{font-family:'Nunito',sans-serif;font-weight:700;font-size:.75rem;color:rgba(255,255,255,.38);
+  background:transparent;border:none;cursor:pointer;padding:4px;transition:color .14s}
+.q-skip:hover:not(:disabled){color:rgba(255,255,255,.65)}
+
+
+/* STREAK BADGE */
+.streak-badge{
+  display:none;align-items:center;gap:6px;
+  background:linear-gradient(135deg,#92400e,#d97706);
+  border:2px solid #fbbf24;border-radius:20px;padding:5px 14px;
+  box-shadow:0 0 18px rgba(251,191,36,.5);
+  animation:streakPulse 1s ease-in-out infinite;
+}
+.streak-badge.show{display:flex}
+.streak-icon{font-size:1rem}
+.streak-text{font-family:'Fredoka One',cursive;font-size:.75rem;color:#fef08a}
+@keyframes streakPulse{0%,100%{box-shadow:0 0 14px rgba(251,191,36,.4)}50%{box-shadow:0 0 28px rgba(251,191,36,.8)}}
+
+/* SCORE CHIPS */
+.score-chip{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(0,0,0,.28);border-radius:12px;padding:4px 10px;border:1.5px solid;
+}
+.score-chip.correct-chip{border-color:#4ade80}
+.score-chip.wrong-chip{border-color:#f87171}
+.chip-count{font-family:'Fredoka One',cursive;font-size:.9rem}
+.correct-chip .chip-count{color:#4ade80}
+.wrong-chip  .chip-count{color:#f87171}
+
+/* FLOATING TEXT POPUP */
+.float-text{
+  position:absolute;pointer-events:none;z-index:50;
+  font-family:'Fredoka One',cursive;font-size:1rem;
+  text-shadow:0 2px 6px rgba(0,0,0,.7);white-space:nowrap;
+  animation:floatUp .9s ease-out forwards;
+}
+@keyframes floatUp{
+  0%  {transform:translateY(0)  translateX(-50%);opacity:1}
+  100%{transform:translateY(-55px) translateX(-50%);opacity:0}
+}
+
+/* TILE TOOLTIP */
+#tileTooltip{
+  position:fixed;pointer-events:none;z-index:200;
+  background:rgba(15,6,40,.92);border:1.5px solid #7c3aed;border-radius:8px;
+  padding:4px 11px;font-family:'Fredoka One',cursive;font-size:.68rem;color:#e9d5ff;
+  display:none;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.5);
+}
+
+/* MILESTONE POPUP */
+.milestone-card{
+  background:linear-gradient(135deg,#1c1917,#292524);
+  border:4px solid #f59e0b;border-radius:24px;
+  padding:32px 48px;text-align:center;
+  box-shadow:0 10px 40px rgba(0,0,0,.85),0 0 60px rgba(245,158,11,.3);
+  animation:cardPop .45s cubic-bezier(.34,1.5,.64,1) forwards;
+  max-width:360px;width:92%;
+}
+.milestone-icon{font-size:3rem;margin-bottom:6px}
+.milestone-title{font-family:'Fredoka One',cursive;font-size:1.6rem;color:#fbbf24;margin-bottom:4px}
+.milestone-desc{font-size:.85rem;color:rgba(255,255,255,.8);margin-bottom:18px;line-height:1.55}
+.milestone-ok{
+  font-family:'Fredoka One',cursive;font-size:.95rem;color:#fff;
+  background:linear-gradient(180deg,#d97706,#b45309);
+  border:3px solid #fbbf24;border-bottom:4px solid #92400e;
+  border-radius:12px;padding:9px 28px;cursor:pointer;transition:all .12s;
+}
+.milestone-ok:hover{transform:translateY(-1px)}
+
+/* FINISH TILE GLOW RING */
+@keyframes finishRing{
+  0%  {transform:scale(1);opacity:.9}
+  50% {transform:scale(1.18);opacity:.4}
+  100%{transform:scale(1);opacity:.9}
+}
+
+/* WIN */
+#winOverlay{position:fixed;inset:0;background:rgba(0,0,0,.86);display:none;
+  align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(7px)}
+#winOverlay.show{display:flex;animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.win-box{background:linear-gradient(135deg,#2d1060,#1a0840);border:4px solid #a855f7;
+  border-radius:28px;padding:50px 70px;text-align:center;
+  box-shadow:0 0 80px rgba(168,85,247,.5),0 20px 60px rgba(0,0,0,.8);
+  animation:popIn .6s cubic-bezier(.34,1.4,.64,1) forwards}
+@keyframes popIn{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.win-stars{font-size:3rem;margin-bottom:6px}
+.win-title{font-family:'Fredoka One',cursive;font-size:2.4rem;color:#ffd700;
+  text-shadow:0 0 30px rgba(255,215,0,.6);margin-bottom:6px}
+.win-sub{font-size:.88rem;color:#c4a8ff;margin-bottom:24px;letter-spacing:.1em;text-transform:uppercase}
+#playAgainBtn{font-family:'Fredoka One',cursive;font-size:1.1rem;color:#fff;
+  background:linear-gradient(180deg,#c8102e,#8a0020);
+  border:3px solid #ff6060;border-bottom:5px solid #600010;
+  border-radius:16px;padding:12px 36px;cursor:pointer;transition:all .12s}
+#playAgainBtn:hover{transform:translateY(-2px)}
+
+.cf{position:fixed;width:10px;height:10px;top:-20px;animation:cfall linear forwards;z-index:999;pointer-events:none}
+@keyframes cfall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(110vh) rotate(720deg) translateX(var(--dx,0px));opacity:0}}
+</style>
+</head>
+<body>
+
+<div class="clouds">
+  <div class="cloud" style="left:4%;animation-duration:32s">☁️</div>
+  <div class="cloud" style="left:34%;animation-duration:42s;animation-delay:-14s;font-size:1.7rem">☁️</div>
+  <div class="cloud" style="left:62%;animation-duration:26s;animation-delay:-7s;font-size:2.6rem">☁️</div>
+  <div class="cloud" style="left:83%;animation-duration:36s;animation-delay:-21s;font-size:1.5rem">☁️</div>
+</div>
+
+<!-- HUD -->
+<div class="hud">
+  <div class="hud-title">📖 Romeo &amp; Juliet</div>
+  <div class="player-card">
+    <div class="player-avatar">📖</div>
+    <div>
+      <div class="player-name">The Scholar</div>
+      <div class="player-sub">Student of Verona</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+    <div class="score-chip correct-chip"><span>✅</span><span class="chip-count" id="correctCount">0</span></div>
+    <div class="score-chip wrong-chip"><span>❌</span><span class="chip-count" id="wrongCount">0</span></div>
+    <div class="streak-badge" id="streakBadge">
+      <span class="streak-icon">🔥</span>
+      <span class="streak-text" id="streakText">3 streak!</span>
+    </div>
+  </div>
+  <div class="turn-badge">
+    <div class="turn-label">Turn</div>
+    <div class="turn-num" id="turnNum">1</div>
+    <div class="turn-of">turns</div>
+  </div>
+</div>
+
+<!-- Effects -->
+<div class="effects-bar" id="effectsBar"></div>
+
+<!-- Game Area -->
+<div class="game-area">
+
+  <!-- LEFT: Good + Bad decks -->
+  <div class="deck-col">
+    <div class="deck-block" id="goodDeckBlock">
+      <div class="deck-title gt">✅ Good Actions</div>
+      <div class="card-pile-3d" id="goodPile">
+        <div class="pile-card gback">✨</div>
+        <div class="pile-card gback">✨</div>
+        <div class="pile-card gback">✨</div>
+      </div>
+      <div class="deck-count" id="goodCount">8 cards</div>
+    </div>
+    <div class="deck-block" id="badDeckBlock">
+      <div class="deck-title bt">❌ Bad Actions</div>
+      <div class="card-pile-3d" id="badPile">
+        <div class="pile-card bback">💀</div>
+        <div class="pile-card bback">💀</div>
+        <div class="pile-card bback">💀</div>
+      </div>
+      <div class="deck-count" id="badCount">8 cards</div>
+    </div>
+  </div>
+
+  <!-- Board -->
+  <div class="board-wrap">
+    <canvas id="boardCanvas" width="720" height="470"></canvas>
+    <div id="pawn">
+      <div class="pawn-emoji">📖</div>
+      <div class="pawn-shadow"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Question deck -->
+  <div class="deck-col">
+    <div class="deck-block" id="qDeckBlock">
+      <div class="deck-title qt">❓ Questions</div>
+      <div class="card-pile-3d" id="qPile">
+        <div class="pile-card qback">❓</div>
+        <div class="pile-card qback">❓</div>
+        <div class="pile-card qback">❓</div>
+      </div>
+      <div class="deck-count" id="qCount">15 cards</div>
+    </div>
+    <div class="how-box">
+      <div class="how-box-title">How to Play</div>
+      <div class="how-box-body">
+        🎲 Roll the dice<br>
+        🚶 Move your piece<br>
+        ❓ Answer a question<br>
+        ✅ Correct → Good card<br>
+        ❌ Wrong → Bad card<br>
+        ⭐ Reach before cards run out!<br>
+        📭 0 questions left → You lose!
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom UI -->
+<div class="bottom-ui">
+  <div class="dice-section">
+    <div class="dice-label">Dice Block</div>
+    <div class="dice-wrap">
+      <div class="cube" id="dice">
+        <div class="face front f1"><div class="pip-grid"><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div></div></div>
+        <div class="face back  f6"><div class="pip-grid"><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div></div></div>
+        <div class="face right f3"><div class="pip-grid"><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div></div></div>
+        <div class="face left  f4"><div class="pip-grid"><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div></div></div>
+        <div class="face top   f2"><div class="pip-grid"><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div></div></div>
+        <div class="face bottom f5"><div class="pip-grid"><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-card">
+    <div id="statusText">Roll the dice to begin!</div>
+    <div class="steps-row"><span>⭐</span><span id="stepsText">42 steps to Juliet's Balcony</span></div>
+  </div>
+
+  <button id="rollBtn" onclick="playTurn()">🎲 Roll!</button>
+</div>
+
+<div id="tileTooltip"></div>
+
+<!-- Card Draw Scene (Master Duel style) -->
+<div id="cardDrawScene">
+  <div class="draw-backdrop"></div>
+  <div class="draw-card" id="drawCard">
+    <div class="draw-card-inner" id="drawCardInner">
+      <div class="draw-card-back"><div class="draw-card-back-icon" id="drawCardBackIcon">✨</div></div>
+      <div class="draw-card-front">
+        <div class="shine-overlay"></div>
+        <div class="dfc-type"   id="dfcType">Good Action</div>
+        <div class="dfc-icon"   id="dfcIcon">🎉</div>
+        <div class="dfc-divider"></div>
+        <div class="dfc-title"  id="dfcTitle">Title</div>
+        <div class="dfc-desc"   id="dfcDesc">Description</div>
+        <div class="dfc-divider"></div>
+        <button class="dfc-ok"  id="dfcOk" onclick="resolveDrawCard()">OK!</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Question Overlay -->
+<div class="overlay" id="questionOverlay">
+  <div class="q-card">
+    <div class="q-header">❓ Question Card</div>
+    <div class="q-text" id="qText"></div>
+    <div class="q-options">
+      <button class="q-btn" id="qBtnA"></button>
+      <button class="q-btn" id="qBtnB"></button>
+      <button class="q-btn" id="qBtnC"></button>
+    </div>
+    <button class="q-skip" id="qBtnSkip">I don't know / Skip →</button>
+  </div>
+</div>
+
+<!-- Milestone Overlay -->
+<div class="overlay" id="milestoneOverlay">
+  <div class="milestone-card">
+    <div class="milestone-icon" id="msIcon">🎉</div>
+    <div class="milestone-title" id="msTitle">Halfway There!</div>
+    <div class="milestone-desc"  id="msDesc">You've crossed the midpoint of Verona. Juliet's balcony is within reach!</div>
+    <button class="milestone-ok" onclick="closeMilestone()">Keep Going!</button>
+  </div>
+</div>
+
+<!-- Win Overlay -->
+<div id="winOverlay">
+  <div class="win-box">
+    <div class="win-stars" id="winStars">⭐🌹⭐</div>
+    <div class="win-title" id="winTitle">You Win!</div>
+    <div class="win-sub"   id="winSub">The Scholar reached Juliet's Balcony!</div>
+    <button id="playAgainBtn" onclick="resetGame()">Play Again!</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  PATH
+// ═══════════════════════════════════════════════════════
+const PATH=[
+  {type:'start', label:'START'},
+  // Row 7 L→R (1-9)
+  {type:'blue',  label:'Verona St.'},
+  {type:'blue',  label:'Cobbled Ln.'},
+  {type:'green', label:'Market Sq.'},
+  {type:'blue',  label:'Stone Bridge'},
+  {type:'blue',  label:'Fountain Way'},
+  {type:'red',   label:"Tybalt's Alley"},
+  {type:'blue',  label:'Old Quarter'},
+  {type:'blue',  label:'Church Path'},
+  {type:'blue',  label:'East Gate'},
+  // Right bend (10-11)
+  {type:'green', label:'Rose Garden'},
+  {type:'blue',  label:'Tower Steps'},
+  // Row 5 R→L (12-20)
+  {type:'event', label:"Friar's Lane"},
+  {type:'blue',  label:'Narrow Alley'},
+  {type:'blue',  label:'Chapel Gate'},
+  {type:'red',   label:'Guard Post'},
+  {type:'blue',  label:'Piazza Steps'},
+  {type:'blue',  label:'Garden Wall'},
+  {type:'green', label:'Merchant Row'},
+  {type:'blue',  label:'Bell Tower'},
+  {type:'blue',  label:'West Arch'},
+  // Left bend (21-22)
+  {type:'event', label:"Fate's Stone"},
+  {type:'blue',  label:'Moonlit Rd.'},
+  // Row 3 L→R (23-31)
+  {type:'blue',  label:'Rose Arch'},
+  {type:'green', label:'Ivy Garden'},
+  {type:'blue',  label:'Palace Gate'},
+  {type:'red',   label:'Duel Ground'},
+  {type:'blue',  label:'Star Path'},
+  {type:'blue',  label:'Night Lane'},
+  {type:'green', label:'Moon Court'},
+  {type:'blue',  label:'Cedar Walk'},
+  {type:'blue',  label:'Lantern Rd.'},
+  // Right bend (32-33)
+  {type:'red',   label:'Ambush Alley'},
+  {type:'blue',  label:'Quiet Close'},
+  // Row 1 R→L ending at FINISH (34-42)
+  {type:'green', label:'Poets Corner'},
+  {type:'blue',  label:'Arch Way'},
+  {type:'blue',  label:'Clover Path'},
+  {type:'event', label:'Oracle Sq.'},
+  {type:'blue',  label:'Lily Lane'},
+  {type:'blue',  label:'Silk Road'},
+  {type:'green', label:'Secret Grdn.'},
+  {type:'blue',  label:'Petal Walk'},
+  {type:'finish',label:'FINISH'},
+];
+
+const GRID=[
+  // Row 7 L→R  (tiles 0–9)
+  [0,7],[1,7],[2,7],[3,7],[4,7],[5,7],[6,7],[7,7],[8,7],[9,7],
+  // Right bend rows 7→5  (tiles 10–11)
+  [9,6],[9,5],
+  // Row 5 R→L  (tiles 12–20)
+  [8,5],[7,5],[6,5],[5,5],[4,5],[3,5],[2,5],[1,5],[0,5],
+  // Left bend rows 5→3  (tiles 21–22)
+  [0,4],[0,3],
+  // Row 3 L→R  (tiles 23–31)
+  [1,3],[2,3],[3,3],[4,3],[5,3],[6,3],[7,3],[8,3],[9,3],
+  // Right bend rows 3→1  (tiles 32–33)
+  [9,2],[9,1],
+  // Row 1 R→L — FINISH at far left [0,1]  (tiles 34–42)
+  [8,1],[7,1],[6,1],[5,1],[4,1],[3,1],[2,1],[1,1],[0,1],
+];
+
+// ═══════════════════════════════════════════════════════
+//  ISO CANVAS
+// ═══════════════════════════════════════════════════════
+const CW=720,CH=470,HW=38,HH=22,DEPTH=12,OX=310,OY=48;
+const canvas=document.getElementById('boardCanvas');
+const ctx=canvas.getContext('2d');
+function isoXY(c,r){return{x:OX+(c-r)*HW,y:OY+(c+r)*HH};}
+
+const TC={
+  blue:  {top:['#4da6f5','#2980d4'],left:'#1a5ca0',right:'#2a7dd4',line:'#1a4a80'},
+  green: {top:['#55d470','#28a848'],left:'#1a6a2a',right:'#28a848',line:'#145a20'},
+  red:   {top:['#f06080','#d02040'],left:'#901030',right:'#c02040',line:'#700020'},
+  event: {top:['#d084fc','#8b21e0'],left:'#5a1090',right:'#8b21e0',line:'#400870'},
+  start: {top:['#ffe080','#f0a800'],left:'#a07000',right:'#e0a000',line:'#806000'},
+  finish:{top:['#ff9aee','#e020b0'],left:'#900070',right:'#e020b0',line:'#700050'},
+};
+
+function rndRect(x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
+}
+
+function drawTile(idx,active){
+  const tile=PATH[idx],[col,row]=GRID[idx],{x,y}=isoXY(col,row),c=TC[tile.type]||TC.blue;
+  const tL={x:x-HW,y},tT={x,y:y-HH},tR={x:x+HW,y},tB={x,y:y+HH};
+  ctx.beginPath();ctx.moveTo(tR.x,tR.y);ctx.lineTo(tB.x,tB.y);
+  ctx.lineTo(tB.x,tB.y+DEPTH);ctx.lineTo(tR.x,tR.y+DEPTH);ctx.closePath();
+  ctx.fillStyle=c.right;ctx.fill();ctx.strokeStyle=c.line;ctx.lineWidth=1;ctx.stroke();
+  ctx.beginPath();ctx.moveTo(tL.x,tL.y);ctx.lineTo(tB.x,tB.y);
+  ctx.lineTo(tB.x,tB.y+DEPTH);ctx.lineTo(tL.x,tL.y+DEPTH);ctx.closePath();
+  ctx.fillStyle=c.left;ctx.fill();ctx.strokeStyle=c.line;ctx.stroke();
+  const g=ctx.createLinearGradient(x,y-HH,x,y+HH);g.addColorStop(0,c.top[0]);g.addColorStop(1,c.top[1]);
+  ctx.beginPath();ctx.moveTo(tT.x,tT.y);ctx.lineTo(tR.x,tR.y);ctx.lineTo(tB.x,tB.y);ctx.lineTo(tL.x,tL.y);ctx.closePath();
+  ctx.fillStyle=g;ctx.fill();ctx.strokeStyle=c.line;ctx.lineWidth=1.2;ctx.stroke();
+  ctx.save();ctx.beginPath();ctx.moveTo(tT.x,tT.y);ctx.lineTo(tR.x,tR.y);ctx.lineTo(tB.x,tB.y);ctx.lineTo(tL.x,tL.y);ctx.closePath();ctx.clip();
+  ctx.strokeStyle='rgba(0,0,0,0.09)';ctx.lineWidth=0.8;
+  for(let i=-3;i<=3;i++){const ly=y+i*(HH/3);ctx.beginPath();ctx.moveTo(tL.x+Math.abs(i)*3,ly);ctx.lineTo(tR.x-Math.abs(i)*3,ly);ctx.stroke();}
+  for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(x+i*(HW/2),y-HH*.8);ctx.lineTo(x+i*(HW/2),y+HH*.8);ctx.stroke();}
+  ctx.restore();
+  if(active){ctx.save();ctx.shadowColor='rgba(255,255,0,.9)';ctx.shadowBlur=18;ctx.beginPath();ctx.moveTo(tT.x,tT.y);ctx.lineTo(tR.x,tR.y);ctx.lineTo(tB.x,tB.y);ctx.lineTo(tL.x,tL.y);ctx.closePath();ctx.strokeStyle='rgba(255,255,80,.95)';ctx.lineWidth=3;ctx.stroke();ctx.restore();}
+  // Finish tile animated ring
+  if(idx===PATH.length-1){
+    const ring=0.5+0.5*Math.sin(pulseT);
+    ctx.save();
+    ctx.beginPath();ctx.moveTo(tT.x,tT.y);ctx.lineTo(tR.x,tR.y);ctx.lineTo(tB.x,tB.y);ctx.lineTo(tL.x,tL.y);ctx.closePath();
+    ctx.strokeStyle=`rgba(255,220,80,${0.4+ring*0.55})`;
+    ctx.lineWidth=2+ring*3;
+    ctx.shadowColor='rgba(255,220,0,.9)';ctx.shadowBlur=12+ring*16;
+    ctx.stroke();ctx.restore();
+  }
+  const rem=(PATH.length-1)-idx;
+  const badge=idx===0?'▶ START':idx===PATH.length-1?'⭐ END':`${rem}→⭐`;
+  const bx=x,by=y-HH-12;
+  ctx.font='bold 8.5px Nunito,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  const tw=ctx.measureText(badge).width+10,bw=Math.max(tw,26),bh=13;
+  ctx.fillStyle=idx===PATH.length-1?'rgba(180,0,120,.85)':idx===0?'rgba(140,100,0,.85)':'rgba(0,0,0,.52)';
+  rndRect(bx-bw/2,by-bh/2,bw,bh,3);ctx.fill();
+  ctx.fillStyle='#ffd700';ctx.fillText(badge,bx,by);
+}
+
+function drawArrow(i){
+  if(i>=PATH.length-1)return;
+  const[c1,r1]=GRID[i],[c2,r2]=GRID[i+1];
+  const p1=isoXY(c1,r1),p2=isoXY(c2,r2);
+  const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
+  const dx=p2.x-p1.x,dy=p2.y-p1.y,len=Math.sqrt(dx*dx+dy*dy),nx=dx/len,ny=dy/len,s=7;
+  ctx.save();ctx.fillStyle='rgba(255,255,255,.62)';ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=3;
+  ctx.beginPath();ctx.moveTo(mx+nx*s,my+ny*s);ctx.lineTo(mx-ny*s*.5-nx*s*.5,my+nx*s*.5-ny*s*.5);ctx.lineTo(mx+ny*s*.5-nx*s*.5,my-nx*s*.5-ny*s*.5);ctx.closePath();ctx.fill();ctx.restore();
+}
+
+function renderBoard(){
+  ctx.clearRect(0,0,CW,CH);
+  const order=PATH.map((_,i)=>i).sort((a,b)=>{const[ca,ra]=GRID[a],[cb,rb]=GRID[b];return(ca+ra)-(cb+rb);});
+  order.forEach(i=>drawArrow(i));
+  order.forEach(i=>drawTile(i,i===currentPos));
+}
+
+// ═══════════════════════════════════════════════════════
+//  QUESTIONS
+// ═══════════════════════════════════════════════════════
+const QUESTIONS=[
+  {q:"In which city is Romeo and Juliet set?",opts:["A) Rome","B) Verona","C) Venice"],ans:"B"},
+  {q:"What are the two feuding families?",opts:["A) Othello & Iago","B) Hamlet & Ophelia","C) Montague & Capulet"],ans:"C"},
+  {q:"Who performs their secret marriage?",opts:["A) The Nurse","B) Friar Lawrence","C) Mercutio"],ans:"B"},
+  {q:"Who says 'A plague on both your houses!'?",opts:["A) Tybalt","B) Romeo","C) Mercutio"],ans:"C"},
+  {q:"How old is Juliet in the play?",opts:["A) 13 years old","B) 16 years old","C) 18 years old"],ans:"A"},
+  {q:"What does 'wherefore' mean in 'Wherefore art thou Romeo?'",opts:["A) Where","B) Why","C) How"],ans:"B"},
+  {q:"How does Romeo die?",opts:["A) Stabbed by Tybalt","B) Drinks poison","C) Falls from balcony"],ans:"B"},
+  {q:"Who does Romeo kill in a duel?",opts:["A) Paris","B) Tybalt","C) Benvolio"],ans:"B"},
+  {q:"Why is Romeo banished from Verona?",opts:["A) He married Juliet","B) He insulted the Prince","C) He killed Tybalt"],ans:"C"},
+  {q:"What does Juliet use to fake her death?",opts:["A) Garden herb","B) Apothecary poison","C) Friar's sleeping potion"],ans:"C"},
+  {q:"Who wrongly tells Romeo that Juliet is dead?",opts:["A) Friar Lawrence","B) Balthazar","C) The Nurse"],ans:"B"},
+  {q:"How does Juliet truly die?",opts:["A) Drinks poison","B) Stabs herself with Romeo's dagger","C) She falls"],ans:"B"},
+  {q:"Which family does Romeo belong to?",opts:["A) Capulet","B) Montague","C) Neither"],ans:"B"},
+  {q:"What is Juliet's family name?",opts:["A) Montague","B) Verona","C) Capulet"],ans:"C"},
+  {q:"'Star-cross'd lovers' means they are...?",opts:["A) Met under the stars","B) Together forever","C) Doomed by fate"],ans:"C"},
+];
+
+// ═══════════════════════════════════════════════════════
+//  ACTION CARDS — all effects meaningful for solo play
+// ═══════════════════════════════════════════════════════
+const GOOD_CARDS=[
+  // Small moves
+  {icon:'🌹',title:"Love's Fortune",    desc:'Move forward 2 spaces.',                                        effect:{type:'move',amount:2}},
+  {icon:'🕊️',title:'Peaceful Step',     desc:'Move forward 2 spaces.',                                        effect:{type:'move',amount:2}},
+  {icon:'🌸',title:'Blossom Path',      desc:'Move forward 3 spaces.',                                        effect:{type:'move',amount:3}},
+  {icon:'⭐',title:'Blessed by Stars',  desc:'Move forward 3 spaces.',                                        effect:{type:'move',amount:3}},
+  // Medium moves
+  {icon:'🌙',title:'Moonlit Path',      desc:'Move forward 4 spaces.',                                        effect:{type:'move',amount:4}},
+  {icon:'🏃',title:'Light of Foot',     desc:'Move forward 4 spaces.',                                        effect:{type:'move',amount:4}},
+  {icon:'💫',title:'Fortune Favors',    desc:'Move forward 5 spaces.',                                        effect:{type:'move',amount:5}},
+  {icon:'🌟',title:"Juliet's Blessing", desc:'Move forward 5 spaces.',                                        effect:{type:'move',amount:5}},
+  // Big moves
+  {icon:'🔥',title:"Cupid's Arrow",     desc:'Move forward 6 spaces — love is swift!',                        effect:{type:'move',amount:6}},
+  {icon:'🦅',title:'Wings of Dawn',     desc:'Move forward 7 spaces — soar over Verona!',                     effect:{type:'move',amount:7}},
+  // Dice boosts
+  {icon:'🎲',title:'Double Dice',       desc:'Your next roll counts twice — up to 12 steps!',                 effect:{type:'doubleDice',turns:1}},
+  {icon:'💨',title:'Fleet of Foot',     desc:'Guaranteed minimum roll of 4 for the next 2 turns.',            effect:{type:'minRoll',value:4,turns:2}},
+  {icon:'🌬️',title:'Tailwind',          desc:'Guaranteed minimum roll of 3 for the next 3 turns.',            effect:{type:'minRoll',value:3,turns:3}},
+  {icon:'🎯',title:'True Aim',          desc:'Guaranteed minimum roll of 5 on your very next turn.',          effect:{type:'minRoll',value:5,turns:1}},
+  // Shield / combo
+  {icon:'🛡️',title:"Friar's Shield",    desc:'The next Bad Action card you draw is completely blocked.',      effect:{type:'shield'}},
+  {icon:'🔁',title:"Scholar's Resolve", desc:'Move forward 3 spaces and block the next bad card.',            effect:{type:'multi',list:[{type:'move',amount:3},{type:'shield'}]}},
+  {icon:'🌈',title:'Rainbow Fortune',   desc:'Move forward 4 spaces and guarantee min roll 4 next turn.',     effect:{type:'multi',list:[{type:'move',amount:4},{type:'minRoll',value:4,turns:1}]}},
+  {icon:'🏆',title:"Victor's March",    desc:'Move forward 6 spaces and block the next bad card.',            effect:{type:'multi',list:[{type:'move',amount:6},{type:'shield'}]}},
+  {icon:'✨',title:'Stardust',          desc:'Move forward 2 spaces and your next roll counts twice.',        effect:{type:'multi',list:[{type:'move',amount:2},{type:'doubleDice',turns:1}]}},
+  {icon:'🎪',title:'Festival Luck',     desc:'Move forward 3 spaces and min roll 3 for the next 2 turns.',   effect:{type:'multi',list:[{type:'move',amount:3},{type:'minRoll',value:3,turns:2}]}},
+];
+
+const BAD_CARDS=[
+  // Small setbacks
+  {icon:'💔',title:'Broken Heart',       desc:'Move back 2 spaces.',                                           effect:{type:'move',amount:-2}},
+  {icon:'🥀',title:'Wilted Rose',        desc:'Move back 2 spaces.',                                           effect:{type:'move',amount:-2}},
+  {icon:'🌧️',title:'Sudden Rain',        desc:'Move back 3 spaces.',                                           effect:{type:'move',amount:-3}},
+  {icon:'⚔️',title:"Tybalt's Wrath",     desc:'Move back 3 spaces.',                                           effect:{type:'move',amount:-3}},
+  // Big setbacks
+  {icon:'🗡️',title:'Banished!',          desc:'Move back 4 spaces — the Prince has spoken.',                   effect:{type:'move',amount:-4}},
+  {icon:'🌑',title:'Dark of Night',      desc:'Move back 5 spaces — you took a wrong turn.',                   effect:{type:'move',amount:-5}},
+  {icon:'💀',title:"Capulet's Ambush",   desc:'Move back 6 spaces — ambushed in the streets!',                 effect:{type:'move',amount:-6}},
+  {icon:'🪦',title:'Tragic Fate',        desc:'Move back 7 spaces — the stars work against you.',              effect:{type:'move',amount:-7}},
+  // Dice curses
+  {icon:'😤',title:'Family Feud',        desc:'Dice capped at 3 for the next 2 turns.',                        effect:{type:'maxRoll',value:3,turns:2}},
+  {icon:'🔒',title:"Prince's Decree",    desc:'Dice capped at 1 for your next 2 turns.',                       effect:{type:'maxRoll',value:1,turns:2}},
+  {icon:'🕸️',title:"Nurse's Rambling",   desc:'Dice capped at 2 for the next 3 turns — she just keeps talking.', effect:{type:'maxRoll',value:2,turns:3}},
+  {icon:'🌫️',title:'Lost in the Fog',    desc:'Dice capped at 3 for the next 3 turns.',                        effect:{type:'maxRoll',value:3,turns:3}},
+  // Combos
+  {icon:'💢',title:"Mercutio's Curse",   desc:'Move back 3 spaces and dice capped at 3 next turn.',            effect:{type:'multi',list:[{type:'move',amount:-3},{type:'maxRoll',value:3,turns:1}]}},
+  {icon:'🩸',title:'Street Fight',       desc:'Move back 4 spaces and dice capped at 2 for 1 turn.',           effect:{type:'multi',list:[{type:'move',amount:-4},{type:'maxRoll',value:2,turns:1}]}},
+  {icon:'⛓️',title:'House Arrest',       desc:'Move back 2 spaces and dice capped at 2 for 2 turns.',          effect:{type:'multi',list:[{type:'move',amount:-2},{type:'maxRoll',value:2,turns:2}]}},
+  {icon:'🌩️',title:"Fate's Thunder",     desc:'Move back 5 spaces and dice capped at 3 for 1 turn.',           effect:{type:'multi',list:[{type:'move',amount:-5},{type:'maxRoll',value:3,turns:1}]}},
+  {icon:'🎭',title:'Cruel Twist',        desc:'Move back 3 spaces and dice capped at 1 for 1 turn.',           effect:{type:'multi',list:[{type:'move',amount:-3},{type:'maxRoll',value:1,turns:1}]}},
+  {icon:'🪄',title:'Reversed Fortune',   desc:'Move back 4 spaces and dice capped at 3 for 2 turns.',          effect:{type:'multi',list:[{type:'move',amount:-4},{type:'maxRoll',value:3,turns:2}]}},
+  {icon:'😈',title:"Devil's Hand",       desc:'Move back 6 spaces and dice capped at 2 for 2 turns. Brutal!',  effect:{type:'multi',list:[{type:'move',amount:-6},{type:'maxRoll',value:2,turns:2}]}},
+  {icon:'☄️',title:"Star-Cross'd",      desc:'Move back 7 spaces — your worst nightmare.',                    effect:{type:'move',amount:-7}},
+];
+
+// ═══════════════════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════════════════
+let currentPos=0,turn=1,animating=false,streak=0,correctTotal=0,wrongTotal=0,halfwayShown=false,pulseT=0;
+const MAX_TURNS=35;
+let eff={shielded:false,doubleDice:false,minRoll:0,minRollTurns:0,maxRoll:6,maxRollTurns:0};
+let qDeck=[],goodDeck=[],badDeck=[];
+
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+function initDecks(){qDeck=shuffle(QUESTIONS);goodDeck=shuffle(GOOD_CARDS);badDeck=shuffle(BAD_CARDS);updateCounts();}
+function drawQ(){if(!qDeck.length)return null;const q=qDeck.pop();updateCounts();return q;}
+function drawGood(){if(!goodDeck.length)goodDeck=shuffle(GOOD_CARDS);updateCounts();return goodDeck.pop();}
+function drawBad(){if(!badDeck.length)badDeck=shuffle(BAD_CARDS);updateCounts();return badDeck.pop();}
+function updateCounts(){
+  const ql=qDeck.length;
+  const qEl=document.getElementById('qCount');
+  qEl.innerText=ql+' card'+(ql!==1?'s':'');
+  qEl.style.color = ql<=3 ? '#f87171' : ql<=6 ? '#fbbf24' : 'rgba(255,255,255,.55)';
+  qEl.style.fontWeight = ql<=6 ? '900' : 'normal';
+  const qPile=document.getElementById('qPile');
+  if(qPile) qPile.style.filter = ql<=3 ? 'drop-shadow(0 0 8px #f87171)' : ql<=6 ? 'drop-shadow(0 0 6px #fbbf24)' : 'none';
+  document.getElementById('goodCount').innerText=goodDeck.length+' cards';
+  document.getElementById('badCount').innerText=badDeck.length+' cards';
+}
+
+// ═══════════════════════════════════════════════════════
+//  PAWN
+// ═══════════════════════════════════════════════════════
+function getPawnPos(idx){const[col,row]=GRID[idx],{x,y}=isoXY(col,row);return{left:x-22,top:y-HH-46};}
+function placePawn(animate=true){
+  const{left,top}=getPawnPos(currentPos);
+  const p=document.getElementById('pawn');
+  p.style.left=left+'px';p.style.top=top+'px';
+  if(animate){p.classList.add('moving');setTimeout(()=>p.classList.remove('moving'),560);}
+  renderBoard();updateHUD();
+}
+function updateHUD(){
+  document.getElementById('turnNum').innerText=turn;
+  document.getElementById('correctCount').innerText=correctTotal;
+  document.getElementById('wrongCount').innerText=wrongTotal;
+  // streak badge
+  const sb=document.getElementById('streakBadge');
+  if(streak>=3){
+    sb.classList.add('show');
+    document.getElementById('streakText').innerText=`${streak} streak! 🔥`;
+  } else { sb.classList.remove('show'); }
+  const rem=(PATH.length-1)-currentPos;
+  document.getElementById('stepsText').innerText=rem>0?`${rem} step${rem!==1?'s':''} to Juliet's Balcony`:'You made it! 🌹';
+  // Effects bar
+  const bar=document.getElementById('effectsBar');bar.innerHTML='';
+  if(eff.shielded)          bar.innerHTML+=`<div class="epill good">🛡️ Shielded (1 use)</div>`;
+  if(eff.doubleDice)        bar.innerHTML+=`<div class="epill good">🎲×2 Double dice next roll!</div>`;
+  if(eff.minRollTurns>0)    bar.innerHTML+=`<div class="epill good">💨 Min roll ${eff.minRoll} (${eff.minRollTurns} turn${eff.minRollTurns!==1?'s':''})</div>`;
+  if(eff.maxRollTurns>0)    bar.innerHTML+=`<div class="epill bad">✂️ Max roll ${eff.maxRoll} (${eff.maxRollTurns} turn${eff.maxRollTurns!==1?'s':''})</div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  DICE
+// ═══════════════════════════════════════════════════════
+const DA={1:[0,0],2:[-90,0],3:[0,-90],4:[0,90],5:[90,0],6:[180,0]};
+let rc=0;
+function spinDice(n){rc++;const[x,y]=DA[n];document.getElementById('dice').style.transform=`rotateX(${rc*1080+x}deg) rotateY(${rc*1080+y}deg)`;}
+
+// ═══════════════════════════════════════════════════════
+//  QUESTION POPUP
+// ═══════════════════════════════════════════════════════
+function showQuestion(){
+  return new Promise(resolve=>{
+    const q=drawQ();
+    if(!q){ resolve('EMPTY'); return; }
+    document.getElementById('qText').innerText=q.q;
+    ['A','B','C'].forEach((id,i)=>{
+      const b=document.getElementById('qBtn'+id);
+      b.innerText=q.opts[i];b.className='q-btn';b.disabled=false;
+    });
+    document.getElementById('qBtnSkip').disabled=false;
+    function answer(choice){
+      ['A','B','C'].forEach(id=>document.getElementById('qBtn'+id).disabled=true);
+      document.getElementById('qBtnSkip').disabled=true;
+      const correct=choice===q.ans;
+      document.getElementById('qBtn'+q.ans).classList.add('correct');
+      if(choice&&choice!==q.ans)document.getElementById('qBtn'+choice).classList.add('wrong');
+      setTimeout(()=>{document.getElementById('questionOverlay').classList.remove('show');resolve(correct);},1100);
+    }
+    ['A','B','C'].forEach(id=>{document.getElementById('qBtn'+id).onclick=()=>answer(id);});
+    document.getElementById('qBtnSkip').onclick=()=>answer(null);
+    document.getElementById('questionOverlay').classList.add('show');
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  MASTER DUEL CARD DRAW ANIMATION
+// ═══════════════════════════════════════════════════════
+let resolveCardDraw=null;
+
+function getElementCenter(el){
+  const r=el.getBoundingClientRect();
+  return{x:r.left+r.width/2,y:r.top+r.height/2};
+}
+
+function spawnParticles(cx,cy,type){
+  const colors=type==='good'
+    ?['#4ade80','#86efac','#22c55e','#fff','#ffd700']
+    :['#f87171','#fca5a5','#ef4444','#fff','#ff6060'];
+  for(let i=0;i<18;i++){
+    const el=document.createElement('div');
+    el.className='card-particle';
+    const angle=Math.random()*Math.PI*2;
+    const dist=40+Math.random()*80;
+    el.style.left=cx+'px';el.style.top=cy+'px';
+    el.style.background=colors[Math.floor(Math.random()*colors.length)];
+    el.style.setProperty('--px',Math.cos(angle)*dist+'px');
+    el.style.setProperty('--py',Math.sin(angle)*dist+'px');
+    el.style.animationDuration=(.4+Math.random()*.4)+'s';
+    el.style.animationDelay=(Math.random()*.15)+'s';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),900);
+  }
+}
+
+async function animateCardDraw(card,type){
+  return new Promise(resolve=>{
+    resolveCardDraw=resolve;
+
+    // Identify source deck element
+    const srcEl=type==='good'
+      ?document.getElementById('goodPile')
+      :document.getElementById('badPile');
+    const srcRect=srcEl.getBoundingClientRect();
+
+    // Target: center of viewport
+    const vw=window.innerWidth,vh=window.innerHeight;
+    const tgtW=220,tgtH=300;
+    const tgtL=(vw-tgtW)/2,tgtT=(vh-tgtH)/2;
+
+    // Configure card
+    const dc=document.getElementById('drawCard');
+    const dci=document.getElementById('drawCardInner');
+    dc.className='draw-card '+type;
+    document.getElementById('drawCardBackIcon').innerText=type==='good'?'✨':'💀';
+    document.getElementById('dfcType').innerText=type==='good'?'✅ Good Action':'❌ Bad Action';
+    document.getElementById('dfcIcon').innerText=card.icon;
+    document.getElementById('dfcTitle').innerText=card.title;
+    document.getElementById('dfcDesc').innerText=card.desc;
+
+    // Remove any previous state
+    dci.classList.remove('flipped','shining');
+
+    // Position card over the source deck
+    dc.style.transition='none';
+    dc.style.left=(srcRect.left+srcRect.width/2-44)+'px';
+    dc.style.top=(srcRect.top+srcRect.height/2-60)+'px';
+    dc.style.width='88px';dc.style.height='120px';
+    dc.style.opacity='0';dc.style.transform='rotateZ(-8deg) scale(0.85)';
+
+    // Show scene
+    const scene=document.getElementById('cardDrawScene');
+    scene.classList.add('active');
+
+    // Phase 1: lift off deck
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      dc.style.transition='left .45s cubic-bezier(.2,.8,.4,1), top .45s cubic-bezier(.2,.8,.4,1), width .45s ease, height .45s ease, opacity .25s ease, transform .45s cubic-bezier(.2,.8,.4,1)';
+      dc.style.left=tgtL+'px';
+      dc.style.top=tgtT+'px';
+      dc.style.width=tgtW+'px';
+      dc.style.height=tgtH+'px';
+      dc.style.opacity='1';
+      dc.style.transform='rotateZ(0deg) scale(1)';
+
+      // Phase 2: flip card after it arrives
+      setTimeout(()=>{
+        const cardCenter={x:tgtL+tgtW/2,y:tgtT+tgtH/2};
+        spawnParticles(cardCenter.x,cardCenter.y,type);
+        dci.classList.add('flipped');
+        setTimeout(()=>dci.classList.add('shining'),50);
+      },460);
+    }));
+  });
+}
+
+function resolveDrawCard(){
+  const scene=document.getElementById('cardDrawScene');
+  // Fly card away upward
+  const dc=document.getElementById('drawCard');
+  dc.style.transition='transform .4s ease, opacity .4s ease';
+  dc.style.transform='translateY(-60px) scale(0.85)';
+  dc.style.opacity='0';
+  setTimeout(()=>{
+    scene.classList.remove('active');
+    if(resolveCardDraw){resolveCardDraw();resolveCardDraw=null;}
+  },420);
+}
+
+// ═══════════════════════════════════════════════════════
+//  APPLY EFFECT
+// ═══════════════════════════════════════════════════════
+async function applyEffect(e){
+  switch(e.type){
+    case 'move':{
+      const dir=e.amount>0?1:-1,abs=Math.abs(e.amount);
+      if(e.amount>0) spawnFloatAtPawn(`+${e.amount} spaces!`,'#4ade80');
+      else           spawnFloatAtPawn(`${e.amount} spaces!`,'#f87171');
+      for(let i=0;i<abs;i++){
+        const n=currentPos+dir;
+        if(n>=0&&n<PATH.length){currentPos=n;SFX.hop();placePawn(true);await sleep(450);}
+      }
+      break;
+    }
+    case 'shield':    eff.shielded=true;break;
+    case 'doubleDice':eff.doubleDice=true;break;
+    case 'minRoll':   eff.minRoll=e.value;eff.minRollTurns=e.turns;break;
+    case 'maxRoll':   eff.maxRoll=e.value;eff.maxRollTurns=e.turns;break;
+    case 'multi':     for(const x of e.list)await applyEffect(x);break;
+  }
+  updateHUD();
+}
+
+function tickEffects(){
+  if(eff.minRollTurns>0){eff.minRollTurns--;if(eff.minRollTurns===0)eff.minRoll=1;}
+  if(eff.maxRollTurns>0){eff.maxRollTurns--;if(eff.maxRollTurns===0)eff.maxRoll=6;}
+  eff.doubleDice=false; // single-use, always reset after the roll it was used on
+  updateHUD();
+}
+
+// ═══════════════════════════════════════════════════════
+//  GAME LOOP
+// ═══════════════════════════════════════════════════════
+async function playTurn(){
+  if(animating)return;
+  animating=true;
+  document.getElementById('rollBtn').disabled=true;
+
+  // Roll with current effects
+  let raw=Math.floor(Math.random()*6)+1;
+  if(eff.doubleDice)raw=Math.min(12,raw*2);
+  if(raw<eff.minRoll)raw=eff.minRoll;
+  if(raw>eff.maxRoll)raw=Math.min(eff.maxRoll,raw);
+  const displayRoll=Math.min(raw,6); // show correct face (1-6)
+  SFX.dice();
+  spinDice(displayRoll);
+
+  let msg=`Rolled a ${displayRoll}!`;
+  if(eff.doubleDice&&raw!==displayRoll)msg+=` ×2 = ${raw} steps!`;
+  if(eff.maxRollTurns>0)msg+=` (capped at ${eff.maxRoll})`;
+  document.getElementById('statusText').innerText=msg;
+
+  await sleep(1700);
+  tickEffects(); // consume turn-based effects
+
+  // Move
+  for(let i=0;i<raw;i++){
+    if(currentPos<PATH.length-1){currentPos++;SFX.hop();placePawn(true);await sleep(480);}
+  }
+
+  await checkMilestones();
+  if(currentPos>=PATH.length-1){triggerWin();return;}
+
+  // Question
+  document.getElementById('statusText').innerText='Answer the question!';
+  const correct=await showQuestion();
+  if(correct==='EMPTY'){ deckEmpty(); return; }
+  await sleep(200);
+
+  if(correct){
+    SFX.correct();
+    streak++;correctTotal++;
+    if(streak===3){SFX.streak();spawnFloatAtPawn('🔥 Hot Streak!','#fbbf24');}
+    else if(streak>3){SFX.streak();spawnFloatAtPawn(`🔥 ${streak} Streak!`,'#fbbf24');}
+    else {spawnFloatAtPawn('✅ Correct!','#4ade80');}
+    document.getElementById('statusText').innerText='✅ Correct! Drawing a Good Action…';
+    await sleep(300);
+    SFX.card();
+    const card=drawGood();
+    await animateCardDraw(card,'good');
+    await applyEffect(card.effect);
+  } else {
+    SFX.wrong();
+    streak=0; wrongTotal++;
+    spawnFloatAtPawn('❌ Wrong!','#f87171');
+    if(eff.shielded){
+      eff.shielded=false;
+      document.getElementById('statusText').innerText='🛡️ Wrong — shield blocked the bad card!';
+      updateHUD();await sleep(1400);
+    } else {
+      document.getElementById('statusText').innerText='❌ Wrong! Drawing a Bad Action…';
+      await sleep(300);
+      SFX.card();
+      const card=drawBad();
+      await animateCardDraw(card,'bad');
+      await applyEffect(card.effect);
+    }
+  }
+
+  if(currentPos>=PATH.length-1){triggerWin();return;}
+
+  turn++;
+  document.getElementById('turnNum').innerText=turn;
+  document.getElementById('statusText').innerText='Your turn — roll the dice!';
+  updateHUD();
+  document.getElementById('rollBtn').disabled=false;
+  animating=false;
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function triggerWin(){
+  SFX.win();
+  document.getElementById('winStars').innerText='⭐📖⭐';
+  document.getElementById('winTitle').innerText='You Win!';
+  document.getElementById('winSub').innerText="The Scholar reached Juliet's Balcony!";
+  document.getElementById('winOverlay').classList.add('show');
+  const cols=['#c8102e','#ffd700','#a855f7','#3ec45a','#5ba8f0','#fff'];
+  for(let i=0;i<90;i++)setTimeout(()=>{
+    const el=document.createElement('div');el.className='cf';
+    el.style.background=cols[Math.floor(Math.random()*cols.length)];
+    el.style.left=Math.random()*100+'vw';el.style.borderRadius=Math.random()>.5?'50%':'2px';
+    el.style.setProperty('--dx',(Math.random()*140-70)+'px');
+    const d=2+Math.random()*2;el.style.animationDuration=d+'s';el.style.animationDelay=Math.random()*.5+'s';
+    document.body.appendChild(el);setTimeout(()=>el.remove(),(d+1)*1000);
+  },i*50);
+  animating=false;
+}
+
+function deckEmpty(){
+  document.getElementById('winStars').innerText='📭💔📭';
+  document.getElementById('winTitle').innerText='Out of Questions!';
+  document.getElementById('winSub').innerText="The question deck ran out — reach the balcony faster next time!";
+  document.getElementById('winOverlay').classList.add('show');
+  animating=false;
+}
+
+function gameOver(){
+  document.getElementById('winStars').innerText='⏰💔⏰';
+  document.getElementById('winTitle').innerText="Time's Up!";
+  document.getElementById('winSub').innerText=`The Scholar ran out of turns — try again!`;
+  document.getElementById('winOverlay').classList.add('show');
+  animating=false;
+}
+
+function resetGame(){
+  currentPos=0;turn=1;animating=false;streak=0;correctTotal=0;wrongTotal=0;halfwayShown=false;
+  eff={shielded:false,doubleDice:false,minRoll:1,minRollTurns:0,maxRoll:6,maxRollTurns:0};
+  document.getElementById('winOverlay').classList.remove('show');
+  document.getElementById('rollBtn').disabled=false;
+  document.getElementById('statusText').innerText='Roll the dice to begin!';
+  initDecks();placePawn(false);renderBoard();
+}
+
+
+// ═══════════════════════════════════════════════════════
+//  AUDIO ENGINE (Web Audio API — no external deps)
+// ═══════════════════════════════════════════════════════
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let _ac = null;
+function getAC(){ if(!_ac) _ac = new AudioCtx(); return _ac; }
+
+function playTone(freq, type, duration, vol=0.18, startTime=0){
+  try {
+    const ac=getAC(), osc=ac.createOscillator(), gain=ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.type=type; osc.frequency.setValueAtTime(freq, ac.currentTime+startTime);
+    gain.gain.setValueAtTime(vol, ac.currentTime+startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime+startTime+duration);
+    osc.start(ac.currentTime+startTime);
+    osc.stop(ac.currentTime+startTime+duration);
+  } catch(e){}
+}
+function playNoise(duration, vol=0.12){
+  try {
+    const ac=getAC(), buf=ac.createBuffer(1,ac.sampleRate*duration,ac.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    const src=ac.createBufferSource(),gain=ac.createGain();
+    src.buffer=buf;src.connect(gain);gain.connect(ac.destination);
+    gain.gain.setValueAtTime(vol,ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+duration);
+    src.start();src.stop(ac.currentTime+duration);
+  } catch(e){}
+}
+
+const SFX = {
+  dice()  { playNoise(.12,.15); playTone(180,'sawtooth',.08,.08,.04); },
+  hop()   { playTone(520,'sine',.07,.07); },
+  correct(){ [523,659,784,1047].forEach((f,i)=>playTone(f,'sine',.18,.12,i*.08)); },
+  wrong() { playTone(220,'sawtooth',.12,.14); setTimeout(()=>playTone(185,'sawtooth',.18,.12),80); },
+  card()  { playTone(800,'sine',.06,.08); playTone(600,'sine',.1,.06,.07); playTone(1000,'sine',.12,.05,.14); },
+  streak(){ [660,880,1100,1320].forEach((f,i)=>playTone(f,'sine',.15,.1,i*.07)); },
+  milestone(){ [523,659,784,1047,1319].forEach((f,i)=>playTone(f,'triangle',.3,.1,i*.09)); },
+  win()   {
+    [[523,.15],[659,.15],[784,.15],[1047,.3],[880,.15],[1047,.5]].forEach(([f,d],i)=>{
+      playTone(f,'triangle',d,.14,i*.16);
+    });
+  }
+};
+
+
+// ═══════════════════════════════════════════════════════
+//  FLOATING TEXT
+// ═══════════════════════════════════════════════════════
+function spawnFloatText(text, color, x, y){ spawnFloatAtPawn(text,color); }
+
+function spawnFloatAtPawn(text, color){
+  try {
+    const pos=getPawnPos(currentPos);
+    const boardEl=document.getElementById('boardCanvas');
+    const rect=boardEl.getBoundingClientRect();
+    const el=document.createElement('div');
+    el.className='float-text';
+    el.innerText=text;
+    el.style.color=color;
+    el.style.position='fixed';
+    el.style.left=(rect.left + pos.left + 22)+'px';
+    el.style.top=(rect.top  + pos.top  - 10)+'px';
+    el.style.zIndex='999';
+    el.style.pointerEvents='none';
+    document.body.appendChild(el);
+    setTimeout(()=>{ if(el.parentNode) el.remove(); },950);
+  } catch(e){ /* never crash the game loop */ }
+}
+
+
+// ═══════════════════════════════════════════════════════
+//  TILE HOVER TOOLTIP
+// ═══════════════════════════════════════════════════════
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const tt = document.getElementById('tileTooltip');
+  let found = false;
+  for(let i=0;i<PATH.length;i++){
+    const [col,row]=GRID[i], {x,y}=isoXY(col,row);
+    // Point-in-diamond test
+    const dx=Math.abs(mx-x)/HW, dy=Math.abs(my-y)/HH;
+    if(dx+dy<=1.05){
+      tt.style.display='block';
+      tt.style.left=(e.clientX+14)+'px';
+      tt.style.top=(e.clientY-10)+'px';
+      const rem=(PATH.length-1)-i;
+      tt.innerText = i===0 ? '🏠 START'
+        : i===PATH.length-1 ? "⭐ FINISH — Juliet's Balcony"
+        : `${PATH[i].label.replace('\n',' ')} · ${rem} step${rem!==1?'s':''} to finish`;
+      found=true; break;
+    }
+  }
+  if(!found){tt.style.display='none';}
+});
+canvas.addEventListener('mouseleave',()=>{ document.getElementById('tileTooltip').style.display='none'; });
+
+
+// ═══════════════════════════════════════════════════════
+//  MILESTONE POPUPS
+// ═══════════════════════════════════════════════════════
+let resolveMilestone=null;
+function showMilestone(icon,title,desc){
+  return new Promise(resolve=>{
+    resolveMilestone=resolve;
+    document.getElementById('msIcon').innerText=icon;
+    document.getElementById('msTitle').innerText=title;
+    document.getElementById('msDesc').innerText=desc;
+    document.getElementById('milestoneOverlay').classList.add('show');
+  });
+}
+function closeMilestone(){
+  document.getElementById('milestoneOverlay').classList.remove('show');
+  if(resolveMilestone){resolveMilestone();resolveMilestone=null;}
+}
+
+async function checkMilestones(){
+  const half=Math.floor((PATH.length-1)/2);
+  if(!halfwayShown && currentPos>=half){
+    halfwayShown=true;
+    SFX.milestone();
+    await showMilestone('🏛️','Halfway Through Verona!',
+      `You've crossed tile ${half} of ${PATH.length-1}. The balcony draws closer — keep your wits sharp!`);
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════
+//  FINISH TILE PULSE LOOP
+// ═══════════════════════════════════════════════════════
+(function pulseLoop(){
+  pulseT=(pulseT+0.03)%(Math.PI*2);
+  renderBoard();
+  requestAnimationFrame(pulseLoop);
+})();
+
+initDecks();renderBoard();placePawn(false);
+</script>
+</body>
+</html>
